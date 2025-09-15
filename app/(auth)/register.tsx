@@ -7,6 +7,7 @@ import {
     Alert,
     ActivityIndicator,
     Image,
+    ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { MotiView, MotiText } from "moti";
@@ -83,17 +84,22 @@ const Register: React.FC = () => {
     };
 
     return (
-        <View className="flex-1 bg-gradient-to-b from-green-100 to-green-300 justify-center p-6">
+        <ImageBackground
+            source={require("@/assets/images/images.jpeg")} // 👈 put your background image here
+            resizeMode="cover"
+            className="flex-1 justify-center p-6"
+        >
+            <View className="bg-black/40 absolute inset-0" />
+            {/* optional dark overlay for readability */}
 
             <MotiText
                 from={{ opacity: 0, translateY: -20 }}
                 animate={{ opacity: 1, translateY: 0 }}
                 transition={{ type: "timing", duration: 700 }}
-                className="text-4xl font-extrabold text-green-800 text-center mb-10"
+                className="text-4xl font-extrabold text-white text-center mb-10"
             >
                 🥗 Register - MyRecipeBox
             </MotiText>
-
 
             <MotiView
                 from={{ opacity: 0, scale: 0.9 }}
@@ -122,7 +128,6 @@ const Register: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-
                 <TextInput
                     placeholder="Full Name"
                     className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 text-gray-900"
@@ -130,7 +135,6 @@ const Register: React.FC = () => {
                     value={displayName}
                     onChangeText={setDisplayName}
                 />
-
 
                 <TextInput
                     placeholder="Email"
@@ -141,7 +145,6 @@ const Register: React.FC = () => {
                     value={email}
                     onChangeText={setEmail}
                 />
-
 
                 <TextInput
                     placeholder="Password"
@@ -159,7 +162,7 @@ const Register: React.FC = () => {
                     className="rounded-xl shadow-md overflow-hidden"
                 >
                     <LinearGradient
-                        colors={["#34d399", "#059669"]} // emerald-400 → emerald-600
+                        colors={["#34d399", "#059669"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{ paddingVertical: 14 }}
@@ -185,7 +188,7 @@ const Register: React.FC = () => {
                     Already have an account? Login
                 </MotiText>
             </MotiView>
-        </View>
+        </ImageBackground>
     );
 };
 
