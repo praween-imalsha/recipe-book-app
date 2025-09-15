@@ -1,4 +1,4 @@
-// screens/AddRecipeScreen.tsx
+//// screens/AddRecipeScreen.tsx
 import React, { useState } from "react";
 import {
     View,
@@ -27,7 +27,11 @@ const MyRecipes: React.FC = () => {
     const [ingredients, setIngredients] = useState("");
     const [instructions, setInstructions] = useState("");
     const [category, setCategory] = useState("");
-    const [imageUri, setImageUri] = useState<string | null>(null);
+
+    // ✅ Separate local preview and uploaded URL
+    const [localImageUri, setLocalImageUri] = useState<string | null>(null);
+    const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+
     const [uploading, setUploading] = useState(false);
     const [imageUploading, setImageUploading] = useState(false);
 
@@ -35,7 +39,7 @@ const MyRecipes: React.FC = () => {
     const auth = getAuth();
     const user = auth.currentUser;
 
-    // Request gallery permission
+    // Permissions
     const requestGalleryPermission = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
@@ -45,17 +49,7 @@ const MyRecipes: React.FC = () => {
         return true;
     };
 
-    // Request camera permission
-    const requestCameraPermission = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-            Alert.alert("Permission Required", "Camera access is required!");
-            return false;
-        }
-        return true;
-    };
-
-    // Pick from gallery
+    // Pick Image
     const pickImageFromGallery = async () => {
         const hasPermission = await requestGalleryPermission();
         if (!hasPermission) return;
@@ -63,7 +57,7 @@ const MyRecipes: React.FC = () => {
         try {
             setImageUploading(true);
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ImagePicker.MediaTypeOptions.Images, // ✅ FIXED
                 allowsEditing: true,
                 aspect: [16, 9],
                 quality: 0.8,
@@ -71,10 +65,11 @@ const MyRecipes: React.FC = () => {
 
             if (!result.canceled && result.assets[0]) {
                 const localUri = result.assets[0].uri;
-                setImageUri(localUri);
+                setLocalImageUri(localUri); // ✅ Show immediately
 
-                const downloadURL = await RecipeService.uploadImageToFirebase(localUri);
-                if (downloadURL) setImageUri(downloadURL);
+                // Upload to Firebase
+                const url = await RecipeService.uploadImageToFirebase(localUri);
+                if (url) setDownloadUrl(url);
             }
         } catch (err) {
             console.error("Gallery error:", err);
@@ -84,44 +79,7 @@ const MyRecipes: React.FC = () => {
         }
     };
 
-    // Take photo
-    const takePhoto = async () => {
-        const hasPermission = await requestCameraPermission();
-        if (!hasPermission) return;
-
-        try {
-            setImageUploading(true);
-            const result = await ImagePicker.launchCameraAsync({
-                allowsEditing: true,
-                aspect: [16, 9],
-                quality: 0.8,
-            });
-
-            if (!result.canceled && result.assets[0]) {
-                const localUri = result.assets[0].uri;
-                setImageUri(localUri);
-
-                const downloadURL = await RecipeService.uploadImageToFirebase(localUri);
-                if (downloadURL) setImageUri(downloadURL);
-            }
-        } catch (err) {
-            console.error("Camera error:", err);
-            Alert.alert("Error", "Failed to take photo");
-        } finally {
-            setImageUploading(false);
-        }
-    };
-
-    // Show options
-    const showImageOptions = () => {
-        Alert.alert("Select Image", "Choose an option", [
-            { text: "Camera", onPress: takePhoto },
-            { text: "Gallery", onPress: pickImageFromGallery },
-            { text: "Cancel", style: "cancel" },
-        ]);
-    };
-
-    // Save recipe
+    // Save Recipe
     const handleAddRecipe = async () => {
         if (!title || !description || !ingredients || !instructions || !category) {
             Alert.alert("Validation", "Please fill all fields!");
@@ -143,7 +101,7 @@ const MyRecipes: React.FC = () => {
                 category,
                 authorId: user.uid,
                 favorites: [],
-                imageUrl: imageUri || "",
+                imageUrl: downloadUrl || "", // ✅ Save uploaded URL
                 createdAt: new Date(),
                 updatedAt: new Date(),
             };
@@ -180,17 +138,17 @@ const MyRecipes: React.FC = () => {
                 {/* Image Picker */}
                 <TouchableOpacity
                     style={styles.imagePicker}
-                    onPress={showImageOptions}
+                    onPress={pickImageFromGallery}
                     disabled={imageUploading}
                 >
                     {imageUploading ? (
                         <ActivityIndicator size="large" color="#7e22ce" />
-                    ) : imageUri ? (
+                    ) : localImageUri ? (
                         <View style={styles.imageContainer}>
-                            <Image source={{ uri: imageUri }} style={styles.image} />
+                            <Image source={{ uri: localImageUri }} style={styles.image} />
                             <TouchableOpacity
                                 style={styles.changeImageButton}
-                                onPress={showImageOptions}
+                                onPress={pickImageFromGallery}
                             >
                                 <Text style={styles.changeImageText}>Change</Text>
                             </TouchableOpacity>
@@ -259,7 +217,13 @@ export default MyRecipes;
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#fff", padding: 16 },
-    title: { fontSize: 28, fontWeight: "bold", marginBottom: 20, textAlign: "center", color: "#7e22ce" },
+    title: {
+        fontSize: 28,
+        fontWeight: "bold",
+        marginBottom: 20,
+        textAlign: "center",
+        color: "#7e22ce",
+    },
     imagePicker: {
         height: 200,
         backgroundColor: "#f3e8ff",
