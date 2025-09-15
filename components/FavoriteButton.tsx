@@ -1,6 +1,7 @@
-// src/components/FavoriteButton.tsx
+
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { TouchableOpacity, StyleSheet } from "react-native";
+import { AntDesign } from "@expo/vector-icons";
 
 interface Props {
     isFavorite: boolean;
@@ -10,20 +11,23 @@ interface Props {
 const FavoriteButton: React.FC<Props> = ({ isFavorite, onPress }) => {
     return (
         <TouchableOpacity style={styles.button} onPress={onPress}>
-            <Text style={[styles.heart, { color: isFavorite ? "red" : "gray" }]}>
-                ♥
-            </Text>
+            {isFavorite ? (
+                <AntDesign name={"heart" as any} size={22} color="#e11d48" /> // ❤️ filled
+            ) : (
+                <AntDesign name={"hearto" as any} size={22} color="#6b7280" /> // 🤍 outline
+            )}
         </TouchableOpacity>
     );
 };
 
 const styles = StyleSheet.create({
     button: {
-        padding: 8,
-    },
-    heart: {
-        fontSize: 24,
-        fontWeight: "bold",
+        position: "absolute",
+        top: 10,
+        right: 10,
+        backgroundColor: "rgba(255,255,255,0.8)",
+        borderRadius: 20,
+        padding: 6,
     },
 });
 
