@@ -84,7 +84,7 @@ const Register: React.FC = () => {
 
     return (
         <View className="flex-1 bg-gradient-to-b from-green-100 to-green-300 justify-center p-6">
-            {/* Title */}
+
             <MotiText
                 from={{ opacity: 0, translateY: -20 }}
                 animate={{ opacity: 1, translateY: 0 }}
@@ -94,7 +94,7 @@ const Register: React.FC = () => {
                 🥗 Register - MyRecipeBox
             </MotiText>
 
-            {/* Card */}
+
             <MotiView
                 from={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -122,7 +122,7 @@ const Register: React.FC = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Display Name */}
+
                 <TextInput
                     placeholder="Full Name"
                     className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 text-gray-900"
@@ -131,7 +131,7 @@ const Register: React.FC = () => {
                     onChangeText={setDisplayName}
                 />
 
-                {/* Email */}
+
                 <TextInput
                     placeholder="Email"
                     className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-4 text-gray-900"
@@ -142,7 +142,7 @@ const Register: React.FC = () => {
                     onChangeText={setEmail}
                 />
 
-                {/* Password */}
+
                 <TextInput
                     placeholder="Password"
                     className="bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 mb-6 text-gray-900"
