@@ -11,7 +11,8 @@ import {
 import { useRouter } from "expo-router";
 import { MotiView, MotiText } from "moti";
 import * as ImagePicker from "expo-image-picker";
-import { register } from "@/services/authService"; // ✅ use service, not firebase/auth directly
+import { LinearGradient } from "expo-linear-gradient";
+import { register } from "@/services/authService";
 
 const Register: React.FC = () => {
     const router = useRouter();
@@ -34,18 +35,48 @@ const Register: React.FC = () => {
         }
     };
 
+    const isValidEmail = (email: string) => /\S+@\S+\.\S+/.test(email);
+
     const handleRegister = async () => {
         if (isLoading) return;
-        setIsLoading(true);
 
+        if (!displayName.trim()) {
+            Alert.alert("Error", "Please enter your full name.");
+            return;
+        }
+        if (!email.trim() || !isValidEmail(email.trim())) {
+            Alert.alert("Error", "Please enter a valid email address.");
+            return;
+        }
+        if (!password.trim() || password.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters long.");
+            return;
+        }
+
+        setIsLoading(true);
         try {
-            await register(email, password, displayName, photoURL);
+            await register(
+                email.trim(),
+                password.trim(),
+                displayName.trim(),
+                photoURL
+            );
 
             Alert.alert("🎉 Success", "Account created! Please login.");
-            router.back(); // ✅ go back to login
+            router.back();
         } catch (err: any) {
             console.error("Register error:", err);
-            Alert.alert("Registration failed", err.message || "Something went wrong");
+
+            let message = "Something went wrong. Please try again.";
+            if (err.code === "auth/email-already-in-use") {
+                message = "This email is already registered.";
+            } else if (err.code === "auth/invalid-email") {
+                message = "Invalid email format.";
+            } else if (err.code === "auth/weak-password") {
+                message = "Password is too weak.";
+            }
+
+            Alert.alert("Registration failed", message);
         } finally {
             setIsLoading(false);
         }
@@ -53,7 +84,7 @@ const Register: React.FC = () => {
 
     return (
         <View className="flex-1 bg-gradient-to-b from-green-100 to-green-300 justify-center p-6">
-            {/* Animated Title */}
+            {/* Title */}
             <MotiText
                 from={{ opacity: 0, translateY: -20 }}
                 animate={{ opacity: 1, translateY: 0 }}
@@ -70,7 +101,7 @@ const Register: React.FC = () => {
                 transition={{ type: "spring", delay: 200 }}
                 className="bg-white rounded-2xl shadow-xl p-6"
             >
-                {/* Profile Picture Picker */}
+                {/* Profile Picture */}
                 <View className="items-center mb-4">
                     {photoURL ? (
                         <Image
@@ -121,19 +152,26 @@ const Register: React.FC = () => {
                     onChangeText={setPassword}
                 />
 
-                {/* Register Button */}
+                {/* Register Button with Gradient */}
                 <TouchableOpacity
-                    className="bg-gradient-to-r from-emerald-400 to-emerald-600 p-4 rounded-xl shadow-md"
                     onPress={handleRegister}
                     disabled={isLoading}
+                    className="rounded-xl shadow-md overflow-hidden"
                 >
-                    {isLoading ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                        <Text className="text-center text-lg font-bold text-green-500">
-                            Register
-                        </Text>
-                    )}
+                    <LinearGradient
+                        colors={["#34d399", "#059669"]} // emerald-400 → emerald-600
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ paddingVertical: 14 }}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <Text className="text-center text-lg font-bold text-white">
+                                Register
+                            </Text>
+                        )}
+                    </LinearGradient>
                 </TouchableOpacity>
 
                 {/* Back to Login */}

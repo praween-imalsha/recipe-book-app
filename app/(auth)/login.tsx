@@ -39,7 +39,7 @@ const Login = () => {
 
     return (
         <ImageBackground
-            source={require("@/assets/images/images.jpeg")} // ✅ put your image inside assets/images folder
+            source={require("@/assets/images/download (5).jpeg")} // ✅ put your image inside assets/images folder
             style={styles.background}
             resizeMode="cover"
         >
@@ -94,7 +94,7 @@ const Login = () => {
                     </TouchableOpacity>
                 </Animated.View>
 
-                {/* Register link */}
+
                 <Animated.View entering={FadeInUp.delay(800)}>
                     <Pressable onPress={() => router.push("/register")}>
                         <Text className="text-center text-green-200 text-lg mt-4 underline">
