@@ -1,4 +1,4 @@
-// screens/Favorites.tsx
+
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
@@ -7,6 +7,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebase";
 import { Recipe } from "@/types/Recipe";
 import RecipeCard from "@/components/RecipeCard";
+
 
 const Favorites: React.FC = () => {
     const [favorites, setFavorites] = useState<Recipe[]>([]);
@@ -60,8 +61,7 @@ const Favorites: React.FC = () => {
             renderItem={({ item }) => (
                 <RecipeCard
                     recipe={item}
-                    onPress={() => navigation.navigate("RecipeDetail", { recipeId: item.id })}
-                />
+                    onPress={() => navigation.navigate("RecipeDetail", {recipeId: item.id})} currentUserId={""}                />
             )}
             keyExtractor={(item) => item.id}
             numColumns={2}
