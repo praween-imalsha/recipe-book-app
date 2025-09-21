@@ -1,0 +1,8 @@
+{
+  "urlRandomness": "CpMQ1Ts",
+  "dev": true,
+  "minify": false,
+  "https": false,
+  "hostType": "lan",
+  "lanType": "ip"
+}
