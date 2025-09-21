@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Recipe } from "@/types/Recipe";
+import { useNavigation } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
-import { ref, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebase";
 import FavoriteButton from "./FavoriteButton";
 import { RecipeService } from "@/services/RecipeService";
-import { useNavigation } from "@react-navigation/native";
 
 interface Props {
     recipe: Recipe;
@@ -14,49 +12,34 @@ interface Props {
     onPress?: () => void;
 }
 
-const PLACEHOLDER_IMAGE = "https://via.placeholder.com/150";
+const PLACEHOLDER_IMAGE = "https://via.placeholder.com/300x200.png?text=No+Image";
 
 const RecipeCard: React.FC<Props> = ({ recipe, currentUserId, onPress }) => {
     const navigation = useNavigation<any>();
     const user = getAuth().currentUser;
 
-    const [imageUrl, setImageUrl] = useState<string>(
-        recipe.imageUrl ?? PLACEHOLDER_IMAGE
-    );
+    const [imageUrl, setImageUrl] = useState<string>(PLACEHOLDER_IMAGE);
     const [isFavorite, setIsFavorite] = useState<boolean>(
         recipe.favorites?.includes(currentUserId) ?? false
     );
 
-    // ✅ Load recipe image (from Firebase Storage if path)
     useEffect(() => {
-        const fetchImage = async () => {
-            try {
-                if (recipe.imageUrl?.startsWith("http")) {
-                    setImageUrl(recipe.imageUrl);
-                } else if (recipe.imageUrl) {
-                    const storageRef = ref(storage, recipe.imageUrl);
-                    const url = await getDownloadURL(storageRef);
-                    setImageUrl(url);
-                } else {
-                    setImageUrl(PLACEHOLDER_IMAGE);
-                }
-            } catch {
-                setImageUrl(PLACEHOLDER_IMAGE);
-            }
-        };
-        fetchImage();
+        if (recipe.imageUrl && recipe.imageUrl.trim()) {
+            setImageUrl(recipe.imageUrl);
+        } else {
+            setImageUrl(PLACEHOLDER_IMAGE);
+        }
     }, [recipe.imageUrl]);
 
-    // ✅ Toggle favorite state
     const toggleFavorite = async () => {
-        if (!user) return;
+        if (!user || !recipe.id) return;
         const newState = !isFavorite;
         setIsFavorite(newState);
         try {
             await RecipeService.toggleFavorite(recipe.id, user.uid, isFavorite);
         } catch (error) {
-            console.error("🔥 Error updating favorite:", error);
-            setIsFavorite(isFavorite); // rollback if failed
+            console.error("Error updating favorite:", error);
+            setIsFavorite(isFavorite); // rollback
         }
     };
 
@@ -64,20 +47,18 @@ const RecipeCard: React.FC<Props> = ({ recipe, currentUserId, onPress }) => {
         <TouchableOpacity
             style={styles.card}
             activeOpacity={0.9}
-            onPress={
-                onPress
-                    ? onPress
-                    : () => navigation.navigate("RecipeDetail", { id: recipe.id }) // ✅ pass only id
-            }
+            onPress={onPress ? onPress : () => navigation.navigate("RecipeDetail", { id: recipe.id })}
         >
-            {/* Image */}
-            <Image
-                source={{ uri: imageUrl }}
-                style={styles.image}
-                resizeMode="cover"
-            />
+            <View style={styles.imageContainer}>
+                <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.placeImage}
+                    resizeMode="cover"
+                    onError={() => setImageUrl(PLACEHOLDER_IMAGE)}
+                />
+                <View style={styles.imageOverlay} />
+            </View>
 
-            {/* Info */}
             <View style={styles.info}>
                 <Text style={styles.title} numberOfLines={1}>
                     {recipe.title}
@@ -85,19 +66,14 @@ const RecipeCard: React.FC<Props> = ({ recipe, currentUserId, onPress }) => {
                 <Text style={styles.description} numberOfLines={2}>
                     {recipe.description}
                 </Text>
-                {recipe.category && (
-                    <Text style={styles.category}>{recipe.category}</Text>
-                )}
+                {recipe.category && <Text style={styles.category}>{recipe.category}</Text>}
             </View>
 
-            {/* Actions */}
             <View style={styles.actions}>
                 <FavoriteButton isFavorite={isFavorite} onPress={toggleFavorite} />
                 <TouchableOpacity
                     style={styles.viewMoreBtn}
-                    onPress={() =>
-                        navigation.navigate("RecipeDetail", { id: recipe.id })
-                    }
+                    onPress={() => navigation.navigate("RecipeDetail", { id: recipe.id })}
                 >
                     <Text style={styles.viewMoreText}>View More</Text>
                 </TouchableOpacity>
@@ -121,22 +97,27 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         elevation: 3,
     },
-    image: {
+    imageContainer: {
         width: "100%",
-        height: 120,
+        height: 150,
         borderRadius: 10,
-        backgroundColor: "#f0f0f0",
+        overflow: "hidden",
         marginBottom: 8,
+        position: "relative",
+        backgroundColor: "#f0f0f0",
+    },
+    placeImage: {
+        width: "100%",
+        height: "100%",
+    },
+    imageOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0,0,0,0.15)", // dark overlay
     },
     info: { flex: 1 },
     title: { fontSize: 16, fontWeight: "bold", color: "#333" },
     description: { fontSize: 14, color: "#666", marginTop: 4 },
-    category: {
-        marginTop: 6,
-        fontSize: 12,
-        fontWeight: "600",
-        color: "#888",
-    },
+    category: { marginTop: 6, fontSize: 12, fontWeight: "600", color: "#888" },
     actions: {
         flexDirection: "row",
         justifyContent: "space-between",

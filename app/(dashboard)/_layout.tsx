@@ -6,6 +6,7 @@ const tabs = [
     { label: "Home", name: "home", icon: "restaurant-menu" }, // 🍴 Recipe Home
     { label: "MyRecipes", name: "my-recipes", icon: "menu-book" }, // 📖 User recipes
     { label: "Favorites", name: "favorites", icon: "favorite" }, // ❤️ Saved recipes
+    { label: "UserRecipes", name: "user-recipes", icon: "library-books" },
     { label: "Profile", name: "profile", icon: "person" }, // 👤 User profile
 ] as const;
 

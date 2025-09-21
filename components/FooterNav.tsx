@@ -8,6 +8,7 @@ const tabs = [
     { label: "My Recipes", path: "/(dashboard)/my-recipes", icon: "book" },
     { label: "Favorites", path: "/(dashboard)/favorites", icon: "favorite" },
     { label: "Profile", path: "/(dashboard)/profile", icon: "person" },
+    { label: "User Recipes", path: "/(dashboard)/user-recipes", icon: "library-books" },
 ] as const;
 
 const FooterNav = () => {

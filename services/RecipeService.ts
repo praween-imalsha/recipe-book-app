@@ -1,84 +1,124 @@
-// src/services/RecipeService.ts
+// src/services/recipeService.ts
+
+import { db } from "@/firebase";
 import {
-    collection,
     addDoc,
+    collection,
+    deleteDoc,
+    doc,
     getDocs,
+    updateDoc,
     query,
     where,
-    doc,
     getDoc,
-    DocumentData,
-    serverTimestamp,
-    QuerySnapshot,
-    DocumentSnapshot,
-    updateDoc,
-    arrayUnion,
-    arrayRemove,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/firebase";
 import { Recipe } from "@/types/Recipe";
+import { getAuth } from "firebase/auth";
 
-const recipeCollection = collection(db, "recipes");
+const recipesRef = collection(db, "recipes");
 
-export const RecipeService = {
-    async uploadImageToFirebase(localUri: string): Promise<string | null> {
-        try {
-            if (!localUri) return null;
-            const response = await fetch(localUri);
-            const blob = await response.blob();
-            const filename = `recipes/${Date.now()}-${Math.random()
-                .toString(36)
-                .substring(2, 8)}.jpg`;
+// ✅ CREATE
+export const addRecipe = async (recipe: Omit<Recipe, "id">) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not logged in");
 
-            const storageRef = ref(storage, filename);
-            await uploadBytes(storageRef, blob);
+    await addDoc(recipesRef, {
+        ...recipe,
+        authorId: user.uid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    });
+};
 
-            return await getDownloadURL(storageRef);
-        } catch (error) {
-            console.error("🔥 Image upload failed:", error);
-            return null;
-        }
-    },
+// ✅ READ (All)
+export const getAllRecipes = async (): Promise<Recipe[]> => {
+    const snapshot = await getDocs(recipesRef);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Recipe));
+};
 
-    async addRecipe(recipe: Omit<Recipe, "id">): Promise<string> {
-        const docRef = await addDoc(recipeCollection, {
-            ...recipe,
-            favorites: recipe.favorites ?? [], // 🔑 ensure field exists
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        });
-        return docRef.id;
-    },
+// ✅ READ (By Category)
+export const getRecipesByCategory = async (
+    category: string
+): Promise<Recipe[]> => {
+    if (category === "All") return await getAllRecipes();
 
-    async getAllRecipes(): Promise<Recipe[]> {
-        const snapshot: QuerySnapshot = await getDocs(recipeCollection);
-        return snapshot.docs.map((docSnap) => ({
-            id: docSnap.id,
-            ...(docSnap.data() as DocumentData),
-        })) as Recipe[];
-    },
+    const q = query(recipesRef, where("category", "==", category));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Recipe));
+};
 
-    async getRecipeById(id: string): Promise<Recipe | null> {
-        if (!id) return null;
-        const docRef = doc(db, "recipes", id);
-        const snapshot: DocumentSnapshot = await getDoc(docRef);
-        if (!snapshot.exists()) return null;
-        return { id: snapshot.id, ...(snapshot.data() as DocumentData) } as Recipe;
-    },
+// ✅ READ (By Search - title/description contains query)
+export const searchRecipes = async (keyword: string): Promise<Recipe[]> => {
+    if (!keyword.trim()) return await getAllRecipes();
 
-    async toggleFavorite(recipeId: string, userId: string, isCurrentlyFavorite: boolean): Promise<void> {
-        const recipeRef = doc(db, "recipes", recipeId);
-        if (!isCurrentlyFavorite) {
-            await updateDoc(recipeRef, {
-                favorites: arrayUnion(userId),
-                updatedAt: serverTimestamp(),
-            });
-        } else {
-            await updateDoc(recipeRef, {
-                favorites: arrayRemove(userId),
-                updatedAt: serverTimestamp(),
-            });
-        }
-    },
+    const allRecipes = await getAllRecipes();
+    return allRecipes.filter(
+        (recipe) =>
+            recipe.title.toLowerCase().includes(keyword.toLowerCase()) ||
+            recipe.description.toLowerCase().includes(keyword.toLowerCase())
+    );
+};
+
+// ✅ READ (By ID)
+export const getRecipeById = async (id: string): Promise<Recipe | null> => {
+    const docRef = doc(db, "recipes", id);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) return null;
+    return { id: snapshot.id, ...snapshot.data() } as Recipe;
+};
+
+// ✅ UPDATE (Only Owner can update)
+export const updateRecipe = async (id: string, recipe: Partial<Recipe>) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not logged in");
+
+    const docRef = doc(db, "recipes", id);
+    const snapshot = await getDoc(docRef);
+
+    if (!snapshot.exists()) throw new Error("Recipe not found");
+    const data = snapshot.data() as Recipe;
+
+    if (data.authorId !== user.uid)
+        throw new Error("You are not allowed to update this recipe");
+
+    await updateDoc(docRef, { ...recipe, updatedAt: new Date() });
+};
+
+// ✅ DELETE (Only Owner can delete)
+export const deleteRecipe = async (id: string) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not logged in");
+
+    const docRef = doc(db, "recipes", id);
+    const snapshot = await getDoc(docRef);
+
+    if (!snapshot.exists()) throw new Error("Recipe not found");
+    const data = snapshot.data() as Recipe;
+
+    if (data.authorId !== user.uid)
+        throw new Error("You are not allowed to delete this recipe");
+
+    await deleteDoc(docRef);
+};
+
+// ✅ FAVORITE toggle
+export const toggleFavorite = async (
+    id: string,
+    userId: string,
+    favorites: string[] = []
+): Promise<string[]> => {
+    const docRef = doc(db, "recipes", id);
+    let updatedFavorites = [...favorites];
+
+    if (favorites.includes(userId)) {
+        updatedFavorites = updatedFavorites.filter((uid) => uid !== userId);
+    } else {
+        updatedFavorites.push(userId);
+    }
+
+    await updateDoc(docRef, { favorites: updatedFavorites });
+    return updatedFavorites;
 };

@@ -1,271 +1,228 @@
-//// screens/AddRecipeScreen.tsx
 import React, { useState } from "react";
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
-    Image,
     ScrollView,
-    ActivityIndicator,
     StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
     Alert,
 } from "react-native";
+import { addRecipe } from "@/services/RecipeService";
 import { useNavigation } from "@react-navigation/native";
-import Animated, { FadeInUp } from "react-native-reanimated";
 import { getAuth } from "firebase/auth";
-import * as ImagePicker from "expo-image-picker";
 
-import { RecipeService } from "@/services/RecipeService";
-import { Recipe } from "@/types/Recipe";
+const categories = ["Breakfast", "Lunch", "Dinner", "Dessert"];
 
-const MyRecipes: React.FC = () => {
+const AddRecipe = () => {
+    const navigation = useNavigation<any>();
+
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [ingredients, setIngredients] = useState("");
-    const [instructions, setInstructions] = useState("");
-    const [category, setCategory] = useState("");
+    const [category, setCategory] = useState("Breakfast");
+    const [imageUrl, setImageUrl] = useState("");
+    const [ingredients, setIngredients] = useState<string[]>([]);
+    const [instructions, setInstructions] = useState<string[]>([]);
 
-    // ✅ Separate local preview and uploaded URL
-    const [localImageUri, setLocalImageUri] = useState<string | null>(null);
-    const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+    const [ingredientInput, setIngredientInput] = useState("");
+    const [instructionInput, setInstructionInput] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const [uploading, setUploading] = useState(false);
-    const [imageUploading, setImageUploading] = useState(false);
-
-    const navigation = useNavigation();
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    // Permissions
-    const requestGalleryPermission = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== "granted") {
-            Alert.alert("Permission Required", "Gallery access is required!");
-            return false;
-        }
-        return true;
-    };
-
-    // Pick Image
-    const pickImageFromGallery = async () => {
-        const hasPermission = await requestGalleryPermission();
-        if (!hasPermission) return;
-
-        try {
-            setImageUploading(true);
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images, // ✅ FIXED
-                allowsEditing: true,
-                aspect: [16, 9],
-                quality: 0.8,
-            });
-
-            if (!result.canceled && result.assets[0]) {
-                const localUri = result.assets[0].uri;
-                setLocalImageUri(localUri); // ✅ Show immediately
-
-                // Upload to Firebase
-                const url = await RecipeService.uploadImageToFirebase(localUri);
-                if (url) setDownloadUrl(url);
-            }
-        } catch (err) {
-            console.error("Gallery error:", err);
-            Alert.alert("Error", "Failed to pick image");
-        } finally {
-            setImageUploading(false);
+    // ➕ Add ingredient
+    const handleAddIngredient = () => {
+        if (ingredientInput.trim()) {
+            setIngredients((prev) => [...prev, ingredientInput.trim()]);
+            setIngredientInput("");
         }
     };
 
-    // Save Recipe
-    const handleAddRecipe = async () => {
-        if (!title || !description || !ingredients || !instructions || !category) {
-            Alert.alert("Validation", "Please fill all fields!");
-            return;
+    // ➕ Add instruction
+    const handleAddInstruction = () => {
+        if (instructionInput.trim()) {
+            setInstructions((prev) => [...prev, instructionInput.trim()]);
+            setInstructionInput("");
         }
+    };
 
-        if (!user) {
-            Alert.alert("Error", "You must be logged in to add a recipe!");
+    // ✅ Save to Firestore
+    const handleSave = async () => {
+        if (!title || !description) {
+            Alert.alert("Error", "Please fill all required fields");
             return;
         }
 
         try {
-            setUploading(true);
-            const recipeData: Omit<Recipe, "id"> = {
+            setLoading(true);
+            const userId = getAuth().currentUser?.uid || "guest";
+
+            await addRecipe({
                 title,
                 description,
-                ingredients: ingredients.split(",").map((i) => i.trim()),
-                instructions: instructions.split(",").map((i) => i.trim()),
                 category,
-                authorId: user.uid,
+                imageUrl,
+                ingredients,
+                instructions,
+                authorId: userId,
                 favorites: [],
-                imageUrl: downloadUrl || "", // ✅ Save uploaded URL
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
+            });
 
-            await RecipeService.addRecipe(recipeData);
-            Alert.alert("Success", "Recipe added!", [
-                { text: "OK", onPress: () => navigation.goBack() },
-            ]);
-        } catch (err) {
-            console.error("Error adding recipe:", err);
-            Alert.alert("Error", "Something went wrong!");
+            Alert.alert("Success", "Recipe added successfully");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error adding recipe:", error);
+            Alert.alert("Error", "Something went wrong while saving recipe");
         } finally {
-            setUploading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-            <ScrollView
-                style={styles.container}
-                contentContainerStyle={{ paddingBottom: 30 }}
-                keyboardShouldPersistTaps="handled"
-            >
-                <Animated.Text
-                    entering={FadeInUp.delay(200).duration(600)}
-                    style={styles.title}
-                >
-                    Add a New Recipe 🍳
-                </Animated.Text>
+        <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+            <Text style={styles.header}>Add New Recipe</Text>
 
-                {/* Image Picker */}
-                <TouchableOpacity
-                    style={styles.imagePicker}
-                    onPress={pickImageFromGallery}
-                    disabled={imageUploading}
-                >
-                    {imageUploading ? (
-                        <ActivityIndicator size="large" color="#7e22ce" />
-                    ) : localImageUri ? (
-                        <View style={styles.imageContainer}>
-                            <Image source={{ uri: localImageUri }} style={styles.image} />
-                            <TouchableOpacity
-                                style={styles.changeImageButton}
-                                onPress={pickImageFromGallery}
-                            >
-                                <Text style={styles.changeImageText}>Change</Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <Text style={styles.imageText}>📷 Pick an image</Text>
-                    )}
-                </TouchableOpacity>
+            {/* Title */}
+            <TextInput
+                style={styles.input}
+                placeholder="Recipe Title"
+                value={title}
+                onChangeText={setTitle}
+            />
 
-                {/* Inputs */}
-                <TextInput
-                    style={styles.input}
-                    placeholder="Title"
-                    value={title}
-                    onChangeText={setTitle}
-                />
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Description"
-                    value={description}
-                    onChangeText={setDescription}
-                    multiline
-                />
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Ingredients (comma separated)"
-                    value={ingredients}
-                    onChangeText={setIngredients}
-                    multiline
-                />
-                <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Instructions (comma separated)"
-                    value={instructions}
-                    onChangeText={setInstructions}
-                    multiline
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Category"
-                    value={category}
-                    onChangeText={setCategory}
-                />
+            {/* Description */}
+            <TextInput
+                style={[styles.input, { height: 100 }]}
+                placeholder="Description"
+                value={description}
+                onChangeText={setDescription}
+                multiline
+            />
 
-                {/* Save Button */}
-                <TouchableOpacity
-                    style={[
-                        styles.button,
-                        (uploading || imageUploading) && styles.buttonDisabled,
-                    ]}
-                    onPress={handleAddRecipe}
-                    disabled={uploading || imageUploading}
-                >
-                    {uploading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.buttonText}>Save Recipe</Text>
-                    )}
-                </TouchableOpacity>
+            {/* Category */}
+            <Text style={styles.label}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {categories.map((cat) => (
+                    <TouchableOpacity
+                        key={cat}
+                        style={[
+                            styles.categoryChip,
+                            category === cat && styles.categoryChipActive,
+                        ]}
+                        onPress={() => setCategory(cat)}
+                    >
+                        <Text
+                            style={[
+                                styles.categoryText,
+                                category === cat && styles.categoryTextActive,
+                            ]}
+                        >
+                            {cat}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
             </ScrollView>
-        </KeyboardAvoidingView>
+
+            {/* Image URL */}
+            <TextInput
+                style={styles.input}
+                placeholder="Image URL"
+                value={imageUrl}
+                onChangeText={setImageUrl}
+            />
+
+            {/* Ingredients */}
+            <Text style={styles.label}>Ingredients</Text>
+            <View style={styles.row}>
+                <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Add ingredient"
+                    value={ingredientInput}
+                    onChangeText={setIngredientInput}
+                />
+                <TouchableOpacity style={styles.addBtn} onPress={handleAddIngredient}>
+                    <Text style={styles.addBtnText}>+</Text>
+                </TouchableOpacity>
+            </View>
+            {ingredients.map((ing, idx) => (
+                <Text key={idx} style={styles.listItem}>
+                    • {ing}
+                </Text>
+            ))}
+
+            {/* Instructions */}
+            <Text style={styles.label}>Instructions</Text>
+            <View style={styles.row}>
+                <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Add step"
+                    value={instructionInput}
+                    onChangeText={setInstructionInput}
+                />
+                <TouchableOpacity style={styles.addBtn} onPress={handleAddInstruction}>
+                    <Text style={styles.addBtnText}>+</Text>
+                </TouchableOpacity>
+            </View>
+            {instructions.map((step, idx) => (
+                <Text key={idx} style={styles.listItem}>
+                    {idx + 1}. {step}
+                </Text>
+            ))}
+
+            {/* Save */}
+            <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={handleSave}
+                disabled={loading}
+            >
+                <Text style={styles.saveBtnText}>
+                    {loading ? "Saving..." : "Save Recipe"}
+                </Text>
+            </TouchableOpacity>
+        </ScrollView>
     );
 };
 
-export default MyRecipes;
-
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff", padding: 16 },
-    title: {
-        fontSize: 28,
-        fontWeight: "bold",
-        marginBottom: 20,
-        textAlign: "center",
-        color: "#7e22ce",
-    },
-    imagePicker: {
-        height: 200,
-        backgroundColor: "#f3e8ff",
-        borderRadius: 12,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 16,
-        borderWidth: 2,
-        borderColor: "#e5e7eb",
-        borderStyle: "dashed",
-        overflow: "hidden",
-    },
-    imageContainer: { width: "100%", height: "100%" },
-    image: { width: "100%", height: "100%", borderRadius: 12 },
-    imageText: { color: "#7e22ce", fontWeight: "600", fontSize: 16 },
-    changeImageButton: {
-        position: "absolute",
-        bottom: 10,
-        right: 10,
-        backgroundColor: "rgba(126, 34, 206, 0.8)",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 6,
-    },
-    changeImageText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+    container: { flex: 1, backgroundColor: "white" },
+    header: { fontSize: 28, fontWeight: "700", marginBottom: 16 },
     input: {
         borderWidth: 1,
-        borderColor: "#d1d5db",
-        borderRadius: 8,
-        padding: 12,
+        borderColor: "#CBD5E1",
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         marginBottom: 12,
-        fontSize: 16,
-        backgroundColor: "#f9fafb",
+        backgroundColor: "#F8FAFC",
     },
-    textArea: { height: 80, textAlignVertical: "top" },
-    button: {
-        backgroundColor: "#7e22ce",
-        padding: 16,
-        borderRadius: 12,
+    label: { fontSize: 16, fontWeight: "600", marginVertical: 8 },
+    categoryChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: "#E2E8F0",
+        borderRadius: 20,
+        marginRight: 8,
+        marginBottom: 12,
+    },
+    categoryChipActive: { backgroundColor: "#3B82F6" },
+    categoryText: { fontSize: 14, color: "#334155" },
+    categoryTextActive: { color: "white", fontWeight: "700" },
+    row: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+    addBtn: {
+        marginLeft: 8,
+        backgroundColor: "#3B82F6",
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    addBtnText: { color: "white", fontSize: 18, fontWeight: "700" },
+    listItem: { fontSize: 15, marginBottom: 6, color: "#475569" },
+    saveBtn: {
+        backgroundColor: "#10B981",
+        paddingVertical: 14,
+        borderRadius: 10,
+        marginTop: 20,
         alignItems: "center",
-        marginTop: 10,
     },
-    buttonDisabled: { opacity: 0.6 },
-    buttonText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+    saveBtnText: { color: "white", fontWeight: "700", fontSize: 16 },
 });
+
+export default AddRecipe;

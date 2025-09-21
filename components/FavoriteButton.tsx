@@ -14,7 +14,7 @@ const FavoriteButton: React.FC<Props> = ({ isFavorite, onPress }) => {
             {isFavorite ? (
                 <AntDesign name={"heart" as any} size={22} color="#e11d48" /> // ❤️ filled
             ) : (
-                <AntDesign name={"hearto" as any} size={22} color="#6b7280" /> // 🤍 outline
+                <AntDesign name={"heart" as any} size={22} color="#6b7280" /> // 🤍 outline
             )}
         </TouchableOpacity>
     );

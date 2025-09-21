@@ -1,80 +1,85 @@
-// src/screens/Home.tsx
-import React, { useEffect, useState } from "react";
 import {
     View,
     Text,
+    ScrollView,
+    Image,
+    StyleSheet,
+    TouchableOpacity,
     TextInput,
     ActivityIndicator,
-    FlatList,
-    TouchableOpacity,
-    StyleSheet,
+    Dimensions,
 } from "react-native";
-import { getAuth } from "firebase/auth";
+import React, { useEffect, useState } from "react";
+import {
+    getAllRecipes,
+    getRecipesByCategory,
+    searchRecipes,
+    toggleFavorite,
+} from "@/services/RecipeService";
 import { Recipe } from "@/types/Recipe";
-import RecipeCard from "@/components/RecipeCard";
-import { RecipeService } from "@/services/RecipeService";
+import { useNavigation } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
 
-const Home: React.FC = () => {
+const { width: screenWidth } = Dimensions.get("window");
+
+// categories
+const categories = ["All", "Breakfast", "Lunch", "Dinner", "Dessert"];
+
+const Home = () => {
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
-    const [category, setCategory] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
+    const navigation = useNavigation<any>();
+    const userId = getAuth().currentUser?.uid || "guest";
 
-    const categories = ["All", "Breakfast", "Lunch", "Dinner", "Snack", "Dessert"];
+    useEffect(() => {
+        fetchRecipes();
+    }, [selectedCategory, searchQuery]);
 
-    const auth = getAuth();
-    const currentUserId = auth.currentUser?.uid || ""; // ✅ pass to RecipeCard
-
-    // Fetch recipes
     const fetchRecipes = async () => {
         try {
             setLoading(true);
 
-            if (!currentUserId) {
-                console.log("User not logged in");
-                setRecipes([]);
-                return;
-            }
-
             let data: Recipe[] = [];
-
-            if (search.trim() !== "") {
-                data = await RecipeService.searchRecipes(search);
-            } else if (category !== "All") {
-                data = await RecipeService.getRecipesByCategory(category);
+            if (searchQuery.trim()) {
+                data = await searchRecipes(searchQuery);
+            } else if (selectedCategory !== "All") {
+                data = await getRecipesByCategory(selectedCategory);
             } else {
-                data = await RecipeService.getAllRecipes();
+                data = await getAllRecipes();
             }
-
-            // Add fallback image if missing
-            data = data.map((recipe) => ({
-                ...recipe,
-                imageUrl: recipe.imageUrl || "https://via.placeholder.com/150",
-            }));
 
             setRecipes(data);
         } catch (error) {
             console.error("Error fetching recipes:", error);
-            setRecipes([]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch on first load
-    useEffect(() => {
-        fetchRecipes();
-    }, []);
+    const handleFavorite = async (recipe: Recipe) => {
+        try {
+            const updatedFavorites = await toggleFavorite(
+                recipe.id,
+                userId,
+                recipe.favorites || []
+            );
 
-    // Refetch whenever search or category changes
-    useEffect(() => {
-        fetchRecipes();
-    }, [search, category]);
+            setRecipes((prev) =>
+                prev.map((r) =>
+                    r.id === recipe.id ? { ...r, favorites: updatedFavorites } : r
+                )
+            );
+        } catch (error) {
+            console.error("Error updating favorite:", error);
+        }
+    };
 
     if (loading) {
         return (
-            <View style={styles.center}>
-                <ActivityIndicator size="large" color="#7e22ce" />
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#3B82F6" />
                 <Text style={styles.loadingText}>Loading recipes...</Text>
             </View>
         );
@@ -82,29 +87,36 @@ const Home: React.FC = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>All Recipes</Text>
-
-            {/* Search Input */}
-            <TextInput
-                style={styles.input}
-                placeholder="Search recipes..."
-                value={search}
-                onChangeText={setSearch}
-            />
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.title}>Recipes</Text>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search recipes..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+            </View>
 
             {/* Category Filter */}
-            <View style={styles.categoryContainer}>
+            <View style={styles.categoryWrapper}>
                 {categories.map((cat) => (
                     <TouchableOpacity
                         key={cat}
-                        style={[styles.categoryButton, category === cat && styles.activeCategory]}
+                        style={[
+                            styles.categoryChip,
+                            selectedCategory === cat && styles.categoryChipActive,
+                        ]}
                         onPress={() => {
-                            setCategory(cat);
-                            setSearch(""); // reset search when selecting category
+                            setSelectedCategory(cat);
+                            setSearchQuery("");
                         }}
                     >
                         <Text
-                            style={[styles.categoryText, category === cat && styles.activeCategoryText]}
+                            style={[
+                                styles.categoryText,
+                                selectedCategory === cat && styles.categoryTextActive,
+                            ]}
                         >
                             {cat}
                         </Text>
@@ -112,36 +124,149 @@ const Home: React.FC = () => {
                 ))}
             </View>
 
-            {/* Recipes List */}
-            {recipes.length === 0 ? (
-                <Text style={styles.noRecipes}>No recipes found.</Text>
-            ) : (
-                <FlatList
-                    data={recipes}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                        <RecipeCard recipe={item} currentUserId={currentUserId} />
-                    )}
-                    numColumns={2}
-                    columnWrapperStyle={{ justifyContent: "space-between" }}
-                />
-            )}
+            {/* Recipe List */}
+            <ScrollView
+                style={styles.scrollView}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {recipes.length === 0 ? (
+                    <Text style={styles.emptyText}>No recipes found</Text>
+                ) : (
+                    recipes.map((recipe, index) => (
+                        <View
+                            key={recipe.id}
+                            style={[
+                                styles.card,
+                                { marginTop: index === 0 ? 0 : 16 },
+                            ]}
+                        >
+                            {recipe.imageUrl && (
+                                <Image
+                                    source={{ uri: recipe.imageUrl }}
+                                    style={styles.recipeImage}
+                                    resizeMode="cover"
+                                />
+                            )}
+
+                            <View style={styles.cardContent}>
+                                <Text style={styles.recipeTitle} numberOfLines={1}>
+                                    {recipe.title}
+                                </Text>
+                                <Text style={styles.recipeDescription} numberOfLines={2}>
+                                    {recipe.description}
+                                </Text>
+
+                                <View style={styles.cardActions}>
+                                    <TouchableOpacity
+                                        style={styles.favoriteButton}
+                                        onPress={() => handleFavorite(recipe)}
+                                    >
+                                        <Text style={{ fontSize: 20 }}>
+                                            {recipe.favorites?.includes(userId) ? "❤️" : "🤍"}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={styles.viewButton}
+                                        onPress={() => navigation.navigate("RecipeDetail", { id: recipe.id })}
+                                    >
+                                        <Text style={styles.viewButtonText}>View More</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    ))
+                )}
+
+                <View style={styles.bottomSpacing} />
+            </ScrollView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 16, backgroundColor: "#fff" },
-    center: { flex: 1, justifyContent: "center", alignItems: "center" },
-    loadingText: { marginTop: 10, fontSize: 16, fontWeight: "600", color: "#555" },
-    title: { fontSize: 28, fontWeight: "bold", marginBottom: 16, color: "#7e22ce" },
-    input: { borderWidth: 1, borderColor: "#ccc", padding: 10, borderRadius: 8, marginBottom: 12 },
-    categoryContainer: { flexDirection: "row", flexWrap: "wrap", marginBottom: 16 },
-    categoryButton: { padding: 8, borderRadius: 20, borderWidth: 1, borderColor: "#7e22ce", marginRight: 8, marginBottom: 8 },
-    activeCategory: { backgroundColor: "#7e22ce" },
-    categoryText: { color: "#7e22ce" },
-    activeCategoryText: { color: "#fff" },
-    noRecipes: { textAlign: "center", marginTop: 20, fontSize: 16, color: "#888" },
+    container: { flex: 1, backgroundColor: "#F8FAFC" },
+
+    header: { padding: 16, backgroundColor: "white" },
+    title: { fontSize: 28, fontWeight: "700", marginBottom: 12 },
+    searchInput: {
+        borderWidth: 1,
+        borderColor: "#CBD5E1",
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        backgroundColor: "#F1F5F9",
+        fontSize: 16,
+    },
+
+    categoryWrapper: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        gap: 10,
+    },
+    categoryChip: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        backgroundColor: "#E2E8F0",
+        borderRadius: 25,
+        marginRight: 8,
+        marginBottom: 10,
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
+    },
+    categoryChipActive: { backgroundColor: "#3B82F6" },
+    categoryText: { fontSize: 15, color: "#334155", fontWeight: "500" },
+    categoryTextActive: { color: "white", fontWeight: "700" },
+
+    scrollView: { flex: 1 },
+    scrollContent: { padding: 16 },
+
+    card: {
+        backgroundColor: "white",
+        borderRadius: 18,
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 3,
+    },
+    recipeImage: {
+        width: "100%",
+        height: screenWidth * 0.5,
+    },
+    cardContent: { padding: 16 },
+    recipeTitle: { fontSize: 20, fontWeight: "700", marginBottom: 6 },
+    recipeDescription: { fontSize: 14, color: "#64748B" },
+
+    cardActions: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 14,
+        alignItems: "center",
+    },
+    favoriteButton: { padding: 6 },
+    viewButton: {
+        backgroundColor: "#3B82F6",
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 10,
+    },
+    viewButtonText: { color: "white", fontWeight: "600", fontSize: 14 },
+
+    loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+    loadingText: { marginTop: 12, fontSize: 16, color: "#64748B" },
+    emptyText: {
+        textAlign: "center",
+        marginTop: 40,
+        fontSize: 16,
+        color: "#64748B",
+    },
+    bottomSpacing: { height: 50 },
 });
 
 export default Home;
