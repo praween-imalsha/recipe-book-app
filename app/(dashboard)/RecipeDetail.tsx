@@ -17,7 +17,7 @@ import { getAuth } from "firebase/auth";
 const RecipeDetail = () => {
     const route = useRoute<any>();
     const navigation = useNavigation<any>();
-    const { id } = route.params; // 🆔 passed from Home.tsx when navigating
+    const { id } = route.params;
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -81,7 +81,7 @@ const RecipeDetail = () => {
                 </View>
             )}
 
-            {/* Title + Favorite */}
+
             <View style={styles.headerRow}>
                 <Text style={styles.title}>{recipe.title}</Text>
                 <TouchableOpacity
@@ -100,12 +100,12 @@ const RecipeDetail = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Category */}
+
             {recipe.category && (
                 <Text style={styles.category}>Category: {recipe.category}</Text>
             )}
 
-            {/* Description */}
+
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.text}>{recipe.description}</Text>
 
@@ -117,7 +117,7 @@ const RecipeDetail = () => {
                 </Text>
             ))}
 
-            {/* Instructions */}
+
             <Text style={styles.sectionTitle}>Instructions</Text>
             {recipe.instructions.map((step, idx) => (
                 <Text key={idx} style={styles.text}>

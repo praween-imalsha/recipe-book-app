@@ -56,7 +56,7 @@ const UserRecipes: React.FC = () => {
         fetchRecipes();
     }, []);
 
-    // 📝 Handle update
+
     const handleUpdate = async () => {
         if (!selectedRecipe) return;
 
@@ -76,7 +76,7 @@ const UserRecipes: React.FC = () => {
         }
     };
 
-    // ❌ Handle delete
+
     const handleDelete = async (id: string) => {
         Alert.alert("Confirm Delete", "Are you sure you want to delete?", [
             { text: "Cancel", style: "cancel" },
@@ -141,7 +141,7 @@ const UserRecipes: React.FC = () => {
                 />
             )}
 
-            {/* ✏️ Edit Modal */}
+
             <Modal visible={editModalVisible} transparent animationType="slide">
                 <View style={styles.modalContainer}>
                     <ScrollView contentContainerStyle={styles.modalContent}>

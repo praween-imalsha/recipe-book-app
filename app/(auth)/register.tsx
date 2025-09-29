@@ -90,7 +90,6 @@ const Register: React.FC = () => {
             className="flex-1 justify-center p-6"
         >
             <View className="bg-black/40 absolute inset-0" />
-            {/* optional dark overlay for readability */}
 
             <MotiText
                 from={{ opacity: 0, translateY: -20 }}
@@ -107,7 +106,7 @@ const Register: React.FC = () => {
                 transition={{ type: "spring", delay: 200 }}
                 className="bg-white rounded-2xl shadow-xl p-6"
             >
-                {/* Profile Picture */}
+
                 <View className="items-center mb-4">
                     {photoURL ? (
                         <Image
@@ -155,7 +154,7 @@ const Register: React.FC = () => {
                     onChangeText={setPassword}
                 />
 
-                {/* Register Button with Gradient */}
+
                 <TouchableOpacity
                     onPress={handleRegister}
                     disabled={isLoading}
@@ -177,7 +176,7 @@ const Register: React.FC = () => {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {/* Back to Login */}
+
                 <MotiText
                     from={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

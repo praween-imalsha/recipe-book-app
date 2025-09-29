@@ -65,7 +65,7 @@ const Login = () => {
                     />
                 </Animated.View>
 
-                {/* Password */}
+
                 <Animated.View entering={FadeInUp.delay(400)}>
                     <TextInput
                         placeholder="Password"
@@ -77,7 +77,7 @@ const Login = () => {
                     />
                 </Animated.View>
 
-                {/* Login Button */}
+
                 <Animated.View entering={FadeInUp.delay(600)}>
                     <TouchableOpacity
                         className="bg-green-600 p-4 rounded-2xl mt-2 shadow-lg"

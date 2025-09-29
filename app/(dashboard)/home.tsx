@@ -22,7 +22,6 @@ import { getAuth } from "firebase/auth";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-// categories
 const categories = ["All", "Breakfast", "Lunch", "Dinner", "Dessert"];
 
 const Home = () => {
@@ -98,7 +97,7 @@ const Home = () => {
                 />
             </View>
 
-            {/* Category Filter */}
+
             <View style={styles.categoryWrapper}>
                 {categories.map((cat) => (
                     <TouchableOpacity
@@ -124,7 +123,7 @@ const Home = () => {
                 ))}
             </View>
 
-            {/* Recipe List */}
+
             <ScrollView
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}

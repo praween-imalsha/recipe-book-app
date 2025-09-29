@@ -28,7 +28,7 @@ const AddRecipe = () => {
     const [instructionInput, setInstructionInput] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // ➕ Add ingredient
+
     const handleAddIngredient = () => {
         if (ingredientInput.trim()) {
             setIngredients((prev) => [...prev, ingredientInput.trim()]);
@@ -36,7 +36,7 @@ const AddRecipe = () => {
         }
     };
 
-    // ➕ Add instruction
+
     const handleAddInstruction = () => {
         if (instructionInput.trim()) {
             setInstructions((prev) => [...prev, instructionInput.trim()]);
@@ -44,7 +44,6 @@ const AddRecipe = () => {
         }
     };
 
-    // ✅ Save to Firestore
     const handleSave = async () => {
         if (!title || !description) {
             Alert.alert("Error", "Please fill all required fields");
@@ -80,7 +79,7 @@ const AddRecipe = () => {
         <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
             <Text style={styles.header}>Add New Recipe</Text>
 
-            {/* Title */}
+
             <TextInput
                 style={styles.input}
                 placeholder="Recipe Title"
@@ -88,7 +87,6 @@ const AddRecipe = () => {
                 onChangeText={setTitle}
             />
 
-            {/* Description */}
             <TextInput
                 style={[styles.input, { height: 100 }]}
                 placeholder="Description"
@@ -97,7 +95,7 @@ const AddRecipe = () => {
                 multiline
             />
 
-            {/* Category */}
+
             <Text style={styles.label}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {categories.map((cat) => (
@@ -121,7 +119,7 @@ const AddRecipe = () => {
                 ))}
             </ScrollView>
 
-            {/* Image URL */}
+
             <TextInput
                 style={styles.input}
                 placeholder="Image URL"
@@ -129,7 +127,6 @@ const AddRecipe = () => {
                 onChangeText={setImageUrl}
             />
 
-            {/* Ingredients */}
             <Text style={styles.label}>Ingredients</Text>
             <View style={styles.row}>
                 <TextInput
@@ -148,7 +145,7 @@ const AddRecipe = () => {
                 </Text>
             ))}
 
-            {/* Instructions */}
+
             <Text style={styles.label}>Instructions</Text>
             <View style={styles.row}>
                 <TextInput
@@ -167,7 +164,7 @@ const AddRecipe = () => {
                 </Text>
             ))}
 
-            {/* Save */}
+
             <TouchableOpacity
                 style={styles.saveBtn}
                 onPress={handleSave}

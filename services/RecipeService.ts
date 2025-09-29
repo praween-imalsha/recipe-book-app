@@ -1,4 +1,4 @@
-// src/services/recipeService.ts
+
 
 import { db } from "@/firebase";
 import {
@@ -17,7 +17,7 @@ import { getAuth } from "firebase/auth";
 
 const recipesRef = collection(db, "recipes");
 
-// ✅ CREATE
+
 export const addRecipe = async (recipe: Omit<Recipe, "id">) => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -31,13 +31,13 @@ export const addRecipe = async (recipe: Omit<Recipe, "id">) => {
     });
 };
 
-// ✅ READ (All)
+
 export const getAllRecipes = async (): Promise<Recipe[]> => {
     const snapshot = await getDocs(recipesRef);
     return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Recipe));
 };
 
-// ✅ READ (By Category)
+
 export const getRecipesByCategory = async (
     category: string
 ): Promise<Recipe[]> => {
@@ -48,7 +48,7 @@ export const getRecipesByCategory = async (
     return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Recipe));
 };
 
-// ✅ READ (By Search - title/description contains query)
+
 export const searchRecipes = async (keyword: string): Promise<Recipe[]> => {
     if (!keyword.trim()) return await getAllRecipes();
 
@@ -60,7 +60,7 @@ export const searchRecipes = async (keyword: string): Promise<Recipe[]> => {
     );
 };
 
-// ✅ READ (By ID)
+
 export const getRecipeById = async (id: string): Promise<Recipe | null> => {
     const docRef = doc(db, "recipes", id);
     const snapshot = await getDoc(docRef);
@@ -68,7 +68,7 @@ export const getRecipeById = async (id: string): Promise<Recipe | null> => {
     return { id: snapshot.id, ...snapshot.data() } as Recipe;
 };
 
-// ✅ UPDATE (Only Owner can update)
+
 export const updateRecipe = async (id: string, recipe: Partial<Recipe>) => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -86,7 +86,7 @@ export const updateRecipe = async (id: string, recipe: Partial<Recipe>) => {
     await updateDoc(docRef, { ...recipe, updatedAt: new Date() });
 };
 
-// ✅ DELETE (Only Owner can delete)
+
 export const deleteRecipe = async (id: string) => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -104,7 +104,7 @@ export const deleteRecipe = async (id: string) => {
     await deleteDoc(docRef);
 };
 
-// ✅ FAVORITE toggle
+
 export const toggleFavorite = async (
     id: string,
     userId: string,

@@ -1,7 +1,7 @@
-{
+ {
   "expo": {
-    "name": "amd-day-01",
-    "slug": "amd-day-01",
+    "name": "recipe-book-app",
+    "slug": "recipe-book-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
