@@ -28,7 +28,6 @@ const AddRecipe = () => {
     const [instructionInput, setInstructionInput] = useState("");
     const [loading, setLoading] = useState(false);
 
-
     const handleAddIngredient = () => {
         if (ingredientInput.trim()) {
             setIngredients((prev) => [...prev, ingredientInput.trim()]);
@@ -36,12 +35,22 @@ const AddRecipe = () => {
         }
     };
 
-
     const handleAddInstruction = () => {
         if (instructionInput.trim()) {
             setInstructions((prev) => [...prev, instructionInput.trim()]);
             setInstructionInput("");
         }
+    };
+
+    const resetForm = () => {
+        setTitle("");
+        setDescription("");
+        setCategory("Breakfast");
+        setImageUrl("");
+        setIngredients([]);
+        setInstructions([]);
+        setIngredientInput("");
+        setInstructionInput("");
     };
 
     const handleSave = async () => {
@@ -66,6 +75,7 @@ const AddRecipe = () => {
             });
 
             Alert.alert("Success", "Recipe added successfully");
+            resetForm(); // 🔥 clear form after save
             navigation.goBack();
         } catch (error) {
             console.error("Error adding recipe:", error);
@@ -78,7 +88,6 @@ const AddRecipe = () => {
     return (
         <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
             <Text style={styles.header}>Add New Recipe</Text>
-
 
             <TextInput
                 style={styles.input}
@@ -94,7 +103,6 @@ const AddRecipe = () => {
                 onChangeText={setDescription}
                 multiline
             />
-
 
             <Text style={styles.label}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -118,7 +126,6 @@ const AddRecipe = () => {
                     </TouchableOpacity>
                 ))}
             </ScrollView>
-
 
             <TextInput
                 style={styles.input}
@@ -145,7 +152,6 @@ const AddRecipe = () => {
                 </Text>
             ))}
 
-
             <Text style={styles.label}>Instructions</Text>
             <View style={styles.row}>
                 <TextInput
@@ -163,7 +169,6 @@ const AddRecipe = () => {
                     {idx + 1}. {step}
                 </Text>
             ))}
-
 
             <TouchableOpacity
                 style={styles.saveBtn}
